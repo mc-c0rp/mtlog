@@ -1,5 +1,7 @@
 from pyrogram import Client
 from pyrogram.types import Message
+from pyrogram.enums import ChatType
+
 import asyncio
 import db
 from telebot import TeleBot
@@ -36,6 +38,8 @@ async def new_message_handler(client: Client, message: Message):
         db.clean_messages()
         bot.send_message(MY_ID, 'все сообщения в памяти удалены')
     if message.from_user.id == MY_ID or message.from_user.id == BOT_ID:
+        return
+    if message.chat.type != ChatType.PRIVATE:
         return
     
     print(f"New message from @{message.from_user.username}: {message.text} | added to list")
