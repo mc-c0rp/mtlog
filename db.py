@@ -15,12 +15,13 @@ def _check_messages_folder():
         return
     print('messages folder not found, creating')
     mkdir('messages')
+    mkdir('downloads')
 
-def add_message(id: int, text: str, username: str, first_name: str, last_name: str):
+def add_message(id: int, text: str, username: str, first_name: str, last_name: str, type: str): #_type: text, photo, video, voice, video_note
     if last_name == None:
         last_name = ''
 
-    data = {'id': id, 'text': text, 'username': username, 'first_name': first_name, 'last_name': last_name}
+    data = {'id': id, 'text': text, 'username': username, 'first_name': first_name, 'last_name': last_name, 'type': type}
     _save_json(f'messages/{id}.json', data)
     print(f'message {id} saved')
 
@@ -33,10 +34,17 @@ def read_message(id: int):
 
 def delete_message(id: int):
     for msg in listdir('messages'):
-        if path.isfile(msg):
-            if str(id) in msg:
-                remove(f'messages/{msg}')
-                print(f'{msg} -> deleted')
+        full_path = path.join('messages', msg)
+        if path.isfile(full_path) and str(id) in msg:
+            remove(full_path)
+            print(f'{msg} -> deleted')
+
+    for media in listdir('downloads'):
+        full_path = path.join('downloads', media)
+        if path.isfile(full_path) and str(id) in media:
+            remove(full_path)
+            print(f'{media} -> deleted')
+
 
 def clean_messages():
     for msg in listdir('messages'):
