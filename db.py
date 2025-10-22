@@ -1,5 +1,5 @@
 import json
-from os import path, remove, listdir
+from os import path, remove, listdir, mkdir
 
 def _load_json(filename: str):
     with open(filename, "r", encoding="utf-8") as f:
@@ -9,6 +9,12 @@ def _save_json(filename: str, data):
     with open(filename, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=4)
 
+def _check_messages_folder():
+    if path.exists('messages') and path.isdir('messages'):
+        print('messages folder found, skipping')
+        return
+    print('messages folder not found, creating')
+    mkdir('messages')
 
 def add_message(id: int, text: str, username: str, first_name: str, last_name: str):
     if last_name == None:
@@ -37,3 +43,5 @@ def clean_messages():
         if '.json' in msg:
             remove(f'messages/{msg}')
             print(f'{msg} -> deleted')
+
+_check_messages_folder()
