@@ -23,16 +23,44 @@ async def deleted_messages_handler(client: Client, messages: list[Message]):
         saved_message = db.read_message(message.id)
         if saved_message is None:
             continue
+        if saved_message['type'] == 'photo':
+            bot = TeleBot(BOT_TOKEN, 'HTML')
+            with open(f'downloads/{saved_message["id"]}.jpg', "rb") as photo:
+                bot.send_photo(MY_ID, photo, caption=f'<a href="https://t.me/{saved_message["username"]}">{saved_message["first_name"]} {saved_message["last_name"]}</a> удалил(а) сообщение:')
+            db.delete_message(message.id)
+            print(f"Message with ID {message.id} from user @{saved_message['username']} and text (media) was deleted.")
+            return
+        elif saved_message['type'] == 'video':
+            bot = TeleBot(BOT_TOKEN, 'HTML')
+            with open(f'downloads/{saved_message["id"]}.mp4', "rb") as video:
+                bot.send_video(MY_ID, video, caption=f'<a href="https://t.me/{saved_message["username"]}">{saved_message["first_name"]} {saved_message["last_name"]}</a> удалил(а) сообщение:')
+            db.delete_message(message.id)
+            print(f"Message with ID {message.id} from user @{saved_message['username']} and text (media) was deleted.")
+            return
+        elif saved_message['type'] == 'voice':
+            bot = TeleBot(BOT_TOKEN, 'HTML')
+            with open(f'downloads/{saved_message["id"]}.ogg', "rb") as voice:
+                bot.send_message(MY_ID, f'<a href="https://t.me/{saved_message["username"]}">{saved_message["first_name"]} {saved_message["last_name"]}</a> удалил(а) сообщение:')
+                bot.send_audio(MY_ID, voice)
+            db.delete_message(message.id)
+            print(f"Message with ID {message.id} from user @{saved_message['username']} and text (voice) was deleted.")
+            return
+        elif saved_message['type'] == 'video_note':
+            bot = TeleBot(BOT_TOKEN, 'HTML')
+            with open(f'downloads/{saved_message["id"]}.mp4', "rb") as video:
+                bot.send_message(MY_ID, f'<a href="https://t.me/{saved_message["username"]}">{saved_message["first_name"]} {saved_message["last_name"]}</a> удалил(а) сообщение:')
+                bot.send_video_note(MY_ID, video)
+            db.delete_message(message.id)
+            print(f"Message with ID {message.id} from user @{saved_message['username']} and text (video_note) was deleted.")
+            return
 
-        print(f"Message with ID {message.id} from user @{saved_message['username']} and text '{saved_message['text']}' was deleted.")
-
-        bot = TeleBot(BOT_TOKEN, 'HTML')
         bot.send_message(MY_ID, f'<a href="https://t.me/{saved_message["username"]}">{saved_message["first_name"]} {saved_message["last_name"]}</a> удалил(а) сообщение:\n<code>{saved_message["text"]}</code>')
         db.delete_message(message.id)
+        print(f"Message with ID {message.id} from user @{saved_message['username']} and text '{saved_message['text']}' was deleted.")
 
 @app.on_message()
 async def new_message_handler(client: Client, message: Message):
-    if message.chat.id == BOT_ID and '/clear' in message.text:
+    if message.text != None and message.from_user.id == BOT_ID and '/clear' in message.text:
         bot = TeleBot(BOT_TOKEN, 'HTML')
         bot.send_message(MY_ID, 'удаляю все сообщения в памяти...')
         db.clean_messages()
@@ -41,8 +69,29 @@ async def new_message_handler(client: Client, message: Message):
         return
     if message.chat.type != ChatType.PRIVATE:
         return
+    if message.photo:
+        await message.download(file_name=f"downloads/{message.id}.jpg")
+        db.add_message(message.id, message.text, message.from_user.username, message.from_user.first_name, message.from_user.last_name, 'photo')
+        print(f"New message from @{message.from_user.username}: (media) | added to list")
+        return
+    elif message.video:
+        await message.download(file_name=f"downloads/{message.id}.mp4")
+        db.add_message(message.id, message.text, message.from_user.username, message.from_user.first_name, message.from_user.last_name, 'video')
+        print(f"New message from @{message.from_user.username}: (media) | added to list")
+        return
+    elif message.voice:
+        await message.download(file_name=f"downloads/{message.id}.ogg")
+        db.add_message(message.id, message.text, message.from_user.username, message.from_user.first_name, message.from_user.last_name, 'voice')
+        print(f"New message from @{message.from_user.username}: (voice) | added to list")
+        return
+    elif message.video_note:
+        await message.download(file_name=f"downloads/{message.id}.mp4")
+        db.add_message(message.id, message.text, message.from_user.username, message.from_user.first_name, message.from_user.last_name, 'video_note')
+        print(f"New message from @{message.from_user.username}: (video_note) | added to list")
+        return
     
+    db.add_message(message.id, message.text, message.from_user.username, message.from_user.first_name, message.from_user.last_name, 'text')
     print(f"New message from @{message.from_user.username}: {message.text} | added to list")
-    db.add_message(message.id, message.text, message.from_user.username, message.from_user.first_name, message.from_user.last_name)
 
+print('started!')
 app.run()
